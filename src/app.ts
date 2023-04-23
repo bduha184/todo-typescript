@@ -18,14 +18,14 @@ class Project {
 
 type Listener<T> = (items: T[]) => void;
 
-class State<T>{
+class State<T> {
   protected listeners: Listener<T>[] = [];
 
   addListener(listenerFn: Listener<T>) {
     this.listeners.push(listenerFn);
   }
 }
-class ProjectState extends State<Project>{
+class ProjectState extends State<Project> {
   private projects: Project[] = [];
   private static instance: ProjectState;
 
@@ -40,7 +40,6 @@ class ProjectState extends State<Project>{
     this.instance = new ProjectState();
     return this.instance;
   }
-
 
   addProject(title: string, description: string, manday: number) {
     const newProject = new Project(
@@ -152,8 +151,8 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     this.attach(insertAtStart);
   }
 
-  abstract configure():void;
-  abstract renderContent():void;
+  abstract configure(): void;
+  abstract renderContent(): void;
 
   private attach(insertAtBeginning: boolean) {
     this.hostElement.insertAdjacentElement(
@@ -162,18 +161,44 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     );
   }
 }
+//Project Item class
 
-//ProjectList class
-class ProjectList extends Component<HTMLDivElement,HTMLElement>{
-  assignedProjects: Project[];
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  private project: Project;
 
-  constructor(private type: "active" | "finished") {
-    super('project-list','app',false,`${type}-projects`);
-    this.assignedProjects = [];
+  get manday(){
+    if(this.project.manday < 20){
+      return this.project.manday.toString()+'人日';
+    }else {
+      return (this.project.manday/20).toString()+'人月';
+    }
+  }
+
+  constructor(hostId:string, project: Project) {
+    super("single-project", hostId, false, project.id);
+    this.project = project;
     this.configure();
     this.renderContent();
   }
 
+  configure() {}
+  renderContent() {
+    this.element.querySelector("h2")!.textContent = this.project.title;
+    this.element.querySelector("h3")!.textContent = this.manday;
+    this.element.querySelector("p")!.textContent =
+      this.project.description.toString();
+  }
+}
+//ProjectList class
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  assignedProjects: Project[];
+
+  constructor(private type: "active" | "finished") {
+    super("project-list", "app", false, `${type}-projects`);
+    this.assignedProjects = [];
+    this.configure();
+    this.renderContent();
+  }
 
   configure(): void {
     projectState.addListener((projects: Project[]) => {
@@ -202,21 +227,18 @@ class ProjectList extends Component<HTMLDivElement,HTMLElement>{
     )! as HTMLUListElement;
     listEl.innerHTML = "";
     for (const prjItem of this.assignedProjects) {
-      const listItem = document.createElement("li");
-      listItem.textContent = prjItem.title;
-      listEl.appendChild(listItem);
+      new ProjectItem(listEl.id,prjItem);
     }
   }
-
 }
 //ProjectInput Class
-class ProjectInput extends Component<HTMLDivElement,HTMLFormElement>{
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   mandayInputElement: HTMLInputElement;
 
   constructor() {
-    super('project-input','app',true,'user-input');
+    super("project-input", "app", true, "user-input");
 
     this.titleInputElement = this.element.querySelector(
       "#title"
@@ -231,12 +253,11 @@ class ProjectInput extends Component<HTMLDivElement,HTMLFormElement>{
     this.configure();
   }
 
-
   public configure() {
     this.element.addEventListener("submit", this.submitHandlers);
   }
 
-  renderContent(): void {};
+  renderContent(): void {}
 
   private clearInput() {
     this.titleInputElement.value = "";
@@ -287,8 +308,6 @@ class ProjectInput extends Component<HTMLDivElement,HTMLFormElement>{
       this.clearInput();
     }
   }
-
-
 }
 
 const prjInput = new ProjectInput();
